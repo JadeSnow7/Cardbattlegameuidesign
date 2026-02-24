@@ -1,0 +1,23 @@
+# Node
+node_modules/
+
+# Build outputs
+dist/
+release/
+
+# Electron outputs
+*.log
+
+# macOS
+.DS_Store
+
+# Env
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+
+# Python cache
+__pycache__/
