@@ -10,7 +10,7 @@
     "test:watch": "vitest",
     "desktop:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron electron/main.cjs\"",
     "desktop:build": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
-    "desktop:dist": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder",
+    "desktop:dist": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --publish never",
     "icons:generate": "python3 scripts/generate_icons.py"
   },
   "dependencies": {
