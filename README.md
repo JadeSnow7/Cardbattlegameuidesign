@@ -9,11 +9,7 @@ https://www.figma.com/design/bZf9InWwFuNleH1FD0jtBc/Card-Battle-Game-UI-Design
 
 ## Screenshots / 界面截图
 
-### Desktop Start Screen / 桌面端开始界面
-![Desktop Start](docs/screenshots/desktop-start.png)
-
-### Mobile Start Screen / 移动端开始界面
-![Mobile Start](docs/screenshots/mobile-start.png)
+![alt text](image.png)
 
 ## Features / 功能亮点
 
