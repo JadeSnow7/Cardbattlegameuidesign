@@ -2,13 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { motion, AnimatePresence } from "motion/react";
-import { Volume2, VolumeX, Trophy, Award, Package, Swords } from "lucide-react";
-import { PlayerInfo } from "./components/PlayerInfo";
-import { BattleBoard } from "./components/BattleBoard";
-import { HandCards } from "./components/HandCards";
-import { ActionBar } from "./components/ActionBar";
-import { AttackLine } from "./components/AttackLine";
-import { DamageNumber } from "./components/DamageNumber";
+import { Volume2, VolumeX, Trophy, Award, Package } from "lucide-react";
 import { DeckBuilder } from "./components/DeckBuilder";
 import { RankingPanel } from "./components/RankingPanel";
 import { AchievementPanel } from "./components/AchievementPanel";
@@ -24,6 +18,11 @@ import { achievementSystem } from "./systems/AchievementSystem";
 import { rankingSystem } from "./systems/RankingSystem";
 import { HERO_SKILL_COST } from "./constants";
 import { ImageAssetKey, getImageUrl } from "./resources/imageManifest";
+import { usePlatform } from "./hooks/usePlatform";
+import { GameLayoutDesktop, GameLayoutHandlers } from "./components/GameLayoutDesktop";
+import { GameLayoutMobile } from "./components/GameLayoutMobile";
+import { AttackLine } from "./components/AttackLine";
+import { DamageNumber } from "./components/DamageNumber";
 
 interface AttackAnimation {
   id: string;
@@ -66,6 +65,8 @@ export default function App() {
   const [gameEndHandled, setGameEndHandled] = useState(false);
   const playerId = "player1";
 
+  const { isDesktop } = usePlatform();
+
   // 处理游戏结束（胜利/失败触发排名和成就）
   useEffect(() => {
     if (gameState.phase === GamePhase.GameEnd && !gameEndHandled) {
@@ -96,6 +97,21 @@ export default function App() {
     setSelectedCard((prev) => (prev === id ? null : id));
   }, []);
 
+  // 辅助函数：根据选择器获取屏幕中心坐标
+  const getElementCenter = (elementId: string | null): { x: number; y: number } | null => {
+    if (!elementId) return null;
+    const el = document.querySelector(`[data-card-id="${elementId}"]`) ||
+      document.querySelector(`[data-slot-index="${elementId}"]`);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      return {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2
+      };
+    }
+    return null;
+  };
+
   // 处理战场卡牌点击
   const handleBoardCardClick = useCallback(
     (id: string, isEnemy: boolean) => {
@@ -110,10 +126,14 @@ export default function App() {
         const targetIndex = gameState.enemy.board.findIndex((c) => c.id === id);
 
         if (attackerIndex !== -1 && targetIndex !== -1) {
-          const fromX = 200 + attackerIndex * 140;
-          const fromY = 600;
-          const toX = 200 + targetIndex * 140;
-          const toY = 300;
+          // 动态获取坐标，如果找不到 DOM 则 fallback 到底部/中部估算值
+          const fromPos = getElementCenter(attackingCardId) || { x: window.innerWidth / 2, y: window.innerHeight - 200 };
+          const toPos = getElementCenter(id) || { x: window.innerWidth / 2, y: 300 };
+
+          const fromX = fromPos.x;
+          const fromY = fromPos.y;
+          const toX = toPos.x;
+          const toY = toPos.y;
 
           const animId = `attack_${Date.now()}`;
           setAttackAnimations((prev) => [
@@ -130,7 +150,7 @@ export default function App() {
                 ...prev,
                 {
                   id: `damage_${Date.now()}`,
-                  damage: attacker.attack,
+                  damage: attacker.attack || 0,
                   type: "damage",
                   x: toX,
                   y: toY,
@@ -166,10 +186,14 @@ export default function App() {
 
       const attackerIndex = gameState.player.board.findIndex((c) => c.id === attackingCardId);
       if (attackerIndex !== -1) {
-        const fromX = 200 + attackerIndex * 140;
-        const fromY = 600;
-        const toX = 100;
-        const toY = 100;
+        // 动态获取攻击者坐标，英雄坐标固定在左上角附近（由于在不同的 PlayerInfo 变体里，粗略指向一个较合理的位置）
+        const fromPos = getElementCenter(attackingCardId) || { x: window.innerWidth / 2, y: window.innerHeight - 200 };
+        const fromX = fromPos.x;
+        const fromY = fromPos.y;
+
+        // 英雄头像通常在左上角，可以简单使用固定位置，或动态查找
+        const toX = isDesktop ? 100 : window.innerWidth / 2;
+        const toY = isDesktop ? 100 : 80;
 
         const animId = `attack_${Date.now()}`;
         setAttackAnimations((prev) => [
@@ -202,7 +226,7 @@ export default function App() {
         setAttackingCardId(null);
       }
     }
-  }, [attackingCardId, gameState, attack, canAttackTarget]);
+  }, [attackingCardId, gameState, attack, canAttackTarget, isDesktop]);
 
   const handleEndTurn = () => {
     setAttackingCardId(null);
@@ -278,6 +302,17 @@ export default function App() {
   const isGameStartScreen = gameState.phase === GamePhase.GameStart;
   const isGameEnd = gameState.phase === GamePhase.GameEnd;
 
+  const layoutHandlers: GameLayoutHandlers = {
+    onCardDrop: handleCardDrop,
+    onBoardCardClick: handleBoardCardClick,
+    onEnemyHeroClick: handleEnemyHeroClick,
+    onEndTurn: handleEndTurn,
+    onSurrender: handleSurrender,
+    onSettings: handleSettings,
+    onHeroSkill: handleHeroSkill,
+    onCardSelect: handleCardSelect,
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <AnimatePresence>
@@ -298,14 +333,35 @@ export default function App() {
 
       <div className="min-h-screen bg-[#1E1E2F] relative overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0 opacity-20">
+        <div className="absolute inset-0 opacity-20 z-0">
           <img
             src={getImageUrl(ImageAssetKey.BG_Battle, { w: 1920, h: 1080 })}
             alt="battlefield"
             className="w-full h-full object-cover"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60 z-0" />
+
+        {/* Layout Engine */}
+        {isDesktop ? (
+          <GameLayoutDesktop
+            gameState={gameState}
+            handlers={layoutHandlers}
+            selectedCard={selectedCard}
+            attackingCardId={attackingCardId}
+            heroSkillCost={HERO_SKILL_COST}
+          />
+        ) : (
+          <GameLayoutMobile
+            gameState={gameState}
+            handlers={layoutHandlers}
+            selectedCard={selectedCard}
+            attackingCardId={attackingCardId}
+            heroSkillCost={HERO_SKILL_COST}
+          />
+        )}
+
+        {/* Global Overlays (Render above layout) */}
 
         {/* Game End Overlay */}
         <AnimatePresence>
@@ -326,13 +382,12 @@ export default function App() {
                   initial={{ y: -50, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.3 }}
-                  className={`text-7xl font-bold mb-4 ${
-                    gameState.winner === "player"
-                      ? "text-yellow-400 drop-shadow-[0_0_30px_rgba(234,179,8,0.5)]"
-                      : gameState.winner === "enemy"
+                  className={`text-7xl font-bold mb-4 ${gameState.winner === "player"
+                    ? "text-yellow-400 drop-shadow-[0_0_30px_rgba(234,179,8,0.5)]"
+                    : gameState.winner === "enemy"
                       ? "text-red-400 drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]"
                       : "text-gray-300"
-                  }`}
+                    }`}
                 >
                   {gameState.winner === "player" ? "胜利!" : gameState.winner === "enemy" ? "失败!" : "平局!"}
                 </motion.div>
@@ -347,8 +402,8 @@ export default function App() {
                   {gameState.winner === "player"
                     ? "恭喜你取得胜利！"
                     : gameState.winner === "enemy"
-                    ? "再接再厉！"
-                    : "势均力敌！"}
+                      ? "再接再厉！"
+                      : "势均力敌！"}
                 </motion.p>
 
                 <motion.div
@@ -426,73 +481,6 @@ export default function App() {
           ))}
         </AnimatePresence>
 
-        {/* Main Game Container */}
-        <div className="relative z-10 flex flex-col h-screen">
-          {/* Top Section - Enemy Info */}
-          <div className="p-4">
-            <div onClick={handleEnemyHeroClick} className={attackingCardId ? "cursor-crosshair" : ""}>
-              <PlayerInfo
-                name={gameState.enemy.name}
-                avatar={gameState.enemy.avatar}
-                health={gameState.enemy.health}
-                maxHealth={gameState.enemy.maxHealth}
-                armor={gameState.enemy.armor}
-                mana={gameState.enemy.mana}
-                maxMana={gameState.enemy.maxMana}
-                handCount={gameState.enemy.handCount}
-                deckCount={gameState.enemy.deck.length}
-                isEnemy={true}
-              />
-            </div>
-          </div>
-
-          {/* Middle Section - Battle Board */}
-          <div className="flex-1 overflow-auto">
-            <BattleBoard
-              enemyCards={gameState.enemy.board}
-              playerCards={gameState.player.board}
-              selectedCard={selectedCard}
-              onCardSelect={handleBoardCardClick}
-              onCardDrop={handleCardDrop}
-              attackingCardId={attackingCardId}
-            />
-          </div>
-
-          {/* Bottom Section - Player Info */}
-          <div className="p-4 pt-0">
-            <PlayerInfo
-              name={gameState.player.name}
-              avatar={gameState.player.avatar}
-              health={gameState.player.health}
-              maxHealth={gameState.player.maxHealth}
-              armor={gameState.player.armor}
-              mana={gameState.player.mana}
-              maxMana={gameState.player.maxMana}
-              handCount={gameState.player.hand.length}
-              deckCount={gameState.player.deck.length}
-            />
-          </div>
-
-          {/* Hand Cards */}
-          <HandCards
-            cards={gameState.player.hand}
-            currentMana={gameState.player.mana}
-            selectedCard={selectedCard}
-            onCardSelect={handleCardSelect}
-          />
-
-          {/* Action Bar */}
-          <ActionBar
-            onEndTurn={handleEndTurn}
-            onSurrender={handleSurrender}
-            onSettings={handleSettings}
-            isPlayerTurn={gameState.isPlayerTurn}
-            heroSkillCost={HERO_SKILL_COST}
-            currentMana={gameState.player.mana}
-            onHeroSkill={handleHeroSkill}
-          />
-        </div>
-
         {/* Turn Indicator */}
         {!showStartScreen && !isGameStartScreen && !isGameEnd && (
           <AnimatePresence mode="wait">
@@ -502,7 +490,7 @@ export default function App() {
               animate={{ scale: 1, rotate: 0, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
               transition={{ type: "spring", duration: 0.6 }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+              className="absolute z-40 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             >
               <div className="bg-gradient-to-br from-yellow-500 to-orange-600 px-8 py-4 rounded-2xl border-4 border-yellow-400 shadow-2xl shadow-yellow-500/50">
                 <div className="text-white text-center">
@@ -522,7 +510,7 @@ export default function App() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="absolute bottom-32 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl border-2 border-green-400"
+            className="absolute z-40 bottom-32 left-1/2 -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-xl border-2 border-green-400"
           >
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-300 rounded-full animate-pulse" />
@@ -532,7 +520,7 @@ export default function App() {
         )}
 
         {/* Top Right Controls */}
-        <div className="absolute top-4 right-4 flex gap-2">
+        <div className="absolute z-30 top-4 right-4 flex gap-2">
           {/* AI Difficulty Indicator */}
           <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-500/30">
             <div className="text-white text-sm">
@@ -564,8 +552,8 @@ export default function App() {
           </motion.button>
         </div>
 
-        {/* Top Left Brand */}
-        <div className="absolute top-4 left-4">
+        {/* Top Left Brand (Adjusted left-56 to clear sidebar in desktop) */}
+        <div className={`absolute z-30 top-4 ${isDesktop ? 'left-60' : 'left-4'}`}>
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
@@ -577,8 +565,8 @@ export default function App() {
           </motion.button>
         </div>
 
-        {/* Left Side Quick Access */}
-        <div className="absolute top-1/2 left-4 -translate-y-1/2 flex flex-col gap-2">
+        {/* Left Side Quick Access (Adjusted left-56 to clear sidebar in desktop) */}
+        <div className={`absolute z-30 top-1/2 -translate-y-1/2 flex flex-col gap-2 ${isDesktop ? 'left-60' : 'left-4'}`}>
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -615,7 +603,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm z-40 flex items-center justify-center"
+              className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
               onClick={() => setShowMenu(false)}
             >
               <motion.div

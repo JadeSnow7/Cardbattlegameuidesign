@@ -13,6 +13,8 @@ interface PlayerInfoProps {
   deckCount?: number;
   isEnemy?: boolean;
   status?: Array<{ type: string; icon: string }>;
+  variant?: "sidebar" | "bar";
+  onAvatarClick?: () => void;
 }
 
 export function PlayerInfo({
@@ -27,26 +29,126 @@ export function PlayerInfo({
   deckCount,
   isEnemy = false,
   status = [],
+  variant = "sidebar",
+  onAvatarClick,
 }: PlayerInfoProps) {
   const healthPercent = (health / maxHealth) * 100;
 
+  if (variant === "sidebar") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className={`flex flex-col items-center gap-3 p-4 rounded-xl bg-gradient-to-b ${isEnemy
+            ? "from-red-900/40 to-red-800/30"
+            : "from-blue-900/40 to-blue-800/30"
+          } backdrop-blur-sm border border-white/5 w-full`}
+      >
+        {/* Avatar & Name */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="relative">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              onClick={onAvatarClick}
+              className={`w-14 h-14 rounded-full border-2 ${isEnemy ? "border-red-400" : "border-blue-400"
+                } overflow-hidden shadow-lg ${onAvatarClick ? "cursor-pointer" : ""}`}
+            >
+              <img src={avatar} alt={name} className="w-full h-full object-cover" />
+            </motion.div>
+            {status.length > 0 && (
+              <div className="absolute -top-1 -right-1 flex gap-0.5">
+                {status.map((s, i) => (
+                  <div
+                    key={i}
+                    className="w-4 h-4 rounded-full bg-purple-600 border border-purple-400 flex items-center justify-center text-[10px]"
+                  >
+                    {s.icon}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <span className="text-white text-sm font-semibold">{name}</span>
+        </div>
+
+        {/* Health Bar (Compact) */}
+        <div className="w-full space-y-1">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <Heart className="w-3 h-3 text-red-400" />
+            <span className="font-bold text-red-300">{health}/{maxHealth}</span>
+            {armor > 0 && (
+              <div className="flex items-center gap-0.5 text-blue-300">
+                <Shield className="w-3 h-3" />
+                <span>{armor}</span>
+              </div>
+            )}
+          </div>
+          <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden border border-red-900/50">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${healthPercent}%` }}
+              transition={{ duration: 0.5 }}
+              className="h-full bg-gradient-to-r from-red-600 to-red-500"
+            />
+          </div>
+        </div>
+
+        {/* Mana Crystals (Compact) */}
+        <div className="w-full">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <Flame className="w-3 h-3 text-blue-400" />
+            <span className="font-bold text-cyan-300">{mana}/{maxMana}</span>
+          </div>
+          <div className="flex flex-wrap gap-1 justify-center">
+            {Array.from({ length: maxMana }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className={`w-3 h-3 rounded-full border ${i < mana
+                    ? "bg-gradient-to-br from-cyan-400 to-blue-500 border-cyan-300 shadow shadow-cyan-400/50"
+                    : "bg-gray-700/50 border-gray-600"
+                  }`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Deck & Hand Stats */}
+        <div className="w-full flex justify-between px-2 pt-2 border-t border-white/10 mt-1">
+          <div className="flex items-center gap-1 text-xs text-gray-300" title="手牌数">
+            <Droplet className="w-3 h-3" />
+            <span>{handCount}</span>
+          </div>
+          {deckCount !== undefined && (
+            <div className="flex items-center gap-1 text-xs text-gray-300" title="牌库数">
+              <Layers className="w-3 h-3" />
+              <span>{deckCount}</span>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  // Original "bar" variant
   return (
     <motion.div
       initial={{ opacity: 0, y: isEnemy ? -20 : 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r ${
-        isEnemy
+      className={`flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r ${isEnemy
           ? "from-red-900/40 to-red-800/30"
           : "from-blue-900/40 to-blue-800/30"
-      } backdrop-blur-sm border-2 ${
-        isEnemy ? "border-red-500/30" : "border-blue-500/30"
-      }`}
+        } backdrop-blur-sm border-2 ${isEnemy ? "border-red-500/30" : "border-blue-500/30"
+        }`}
     >
       {/* Avatar */}
       <div className="relative">
         <motion.div
           whileHover={{ scale: 1.05 }}
-          className="w-16 h-16 rounded-full border-4 border-yellow-400/80 overflow-hidden shadow-lg shadow-yellow-400/30"
+          onClick={onAvatarClick}
+          className={`w-16 h-16 rounded-full border-4 border-yellow-400/80 overflow-hidden shadow-lg shadow-yellow-400/30 ${onAvatarClick ? "cursor-pointer" : ""}`}
         >
           <img src={avatar} alt={name} className="w-full h-full object-cover" />
         </motion.div>
@@ -116,11 +218,10 @@ export function PlayerInfo({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: i * 0.05 }}
-                  className={`w-5 h-5 rounded-full border-2 ${
-                    i < mana
+                  className={`w-5 h-5 rounded-full border-2 ${i < mana
                       ? "bg-gradient-to-br from-cyan-400 to-blue-500 border-cyan-300 shadow-lg shadow-cyan-400/50"
                       : "bg-gray-700/50 border-gray-600"
-                  }`}
+                    }`}
                 />
               ))}
             </div>

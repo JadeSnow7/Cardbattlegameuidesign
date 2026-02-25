@@ -7,9 +7,10 @@ interface BoardSlotProps {
   onCardDrop: (cardId: string, slotIndex: number) => void;
   isEmpty: boolean;
   children?: React.ReactNode;
+  className?: string;
 }
 
-export function BoardSlot({ index, onCardDrop, isEmpty, children }: BoardSlotProps) {
+export function BoardSlot({ index, onCardDrop, isEmpty, children, className }: BoardSlotProps) {
   const [{ isOver, canDrop }, drop] = useDrop(
     () => ({
       accept: ItemTypes.CARD,
@@ -30,7 +31,7 @@ export function BoardSlot({ index, onCardDrop, isEmpty, children }: BoardSlotPro
   const isActive = isOver && canDrop;
 
   return (
-    <div ref={drop} className="relative w-full h-full">
+    <div ref={drop as unknown as any} className={`relative w-full h-full flex items-center justify-center ${className || ""}`}>
       {isEmpty ? (
         <motion.div
           animate={{

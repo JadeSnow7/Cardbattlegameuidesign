@@ -1,7 +1,7 @@
 {
   "name": "@figma/my-make-file",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "build": "vite build",
@@ -11,9 +11,15 @@
     "desktop:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && electron electron/main.cjs\"",
     "desktop:build": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --dir",
     "desktop:dist": "npm run build && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --publish never",
+    "mobile:sync": "npx cap sync",
+    "mobile:build:android": "npm run build && (test -d android || npx cap add android) && npx cap sync android && (cd android && ./gradlew assembleDebug)",
+    "mobile:build:ios": "npm run build && (test -d ios || npx cap add ios) && npx cap sync ios && xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO",
     "icons:generate": "python3 scripts/generate_icons.py"
   },
   "dependencies": {
+    "@capacitor/android": "7.0.0",
+    "@capacitor/core": "7.0.0",
+    "@capacitor/ios": "7.0.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "@mui/icons-material": "7.3.5",
@@ -70,6 +76,7 @@
     "vaul": "1.1.2"
   },
   "devDependencies": {
+    "@capacitor/cli": "7.0.0",
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
     "tailwindcss": "4.1.12",
