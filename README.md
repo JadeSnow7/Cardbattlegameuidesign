@@ -9,9 +9,9 @@ https://www.figma.com/design/bZf9InWwFuNleH1FD0jtBc/Card-Battle-Game-UI-Design
 
 ## Screenshots / 界面截图
 
-![alt text](<docs/screenshots/截屏2026-02-25 下午10.22.15.png>)
+![alt text](docs/screenshots/1.png)
 
-![alt text](<docs/screenshots/截屏2026-02-25 下午10.25.41.png>)
+![alt text](docs/screenshots/2.png)
 
 ## Features / 功能亮点
 
