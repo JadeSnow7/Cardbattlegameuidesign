@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { motion, AnimatePresence } from "motion/react";
@@ -45,6 +45,11 @@ interface SavedDeck {
   cards: string[];
 }
 
+interface TurnNoticePayload {
+  turnCount: number;
+  isPlayerTurn: boolean;
+}
+
 export default function App() {
   const { gameState, playCard, attack, endTurn, useHeroSkill, startGame, restartGame, canAttackTarget } =
     useGameState("pve", AIDifficulty.Normal);
@@ -63,6 +68,9 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [savedDecks, setSavedDecks] = useState<SavedDeck[]>([]);
   const [gameEndHandled, setGameEndHandled] = useState(false);
+  const [turnNoticeVisible, setTurnNoticeVisible] = useState(false);
+  const [turnNoticePayload, setTurnNoticePayload] = useState<TurnNoticePayload | null>(null);
+  const lastTurnNoticeKeyRef = useRef("");
   const playerId = "player1";
 
   const { isDesktop } = usePlatform();
@@ -301,6 +309,35 @@ export default function App() {
 
   const isGameStartScreen = gameState.phase === GamePhase.GameStart;
   const isGameEnd = gameState.phase === GamePhase.GameEnd;
+  const hasBlockingOverlay =
+    showStartScreen ||
+    isGameStartScreen ||
+    isGameEnd ||
+    showMenu ||
+    showDeckBuilder ||
+    showRanking ||
+    showAchievements ||
+    showCollection;
+
+  useEffect(() => {
+    if (hasBlockingOverlay) {
+      setTurnNoticeVisible(false);
+      return;
+    }
+
+    const turnKey = `${gameState.turnCount}-${gameState.isPlayerTurn ? "player" : "enemy"}`;
+    if (lastTurnNoticeKeyRef.current === turnKey) return;
+
+    lastTurnNoticeKeyRef.current = turnKey;
+    setTurnNoticePayload({ turnCount: gameState.turnCount, isPlayerTurn: gameState.isPlayerTurn });
+    setTurnNoticeVisible(true);
+
+    const timer = window.setTimeout(() => {
+      setTurnNoticeVisible(false);
+    }, 1150);
+
+    return () => window.clearTimeout(timer);
+  }, [gameState.turnCount, gameState.isPlayerTurn, hasBlockingOverlay]);
 
   const layoutHandlers: GameLayoutHandlers = {
     onCardDrop: handleCardDrop,
@@ -482,27 +519,27 @@ export default function App() {
         </AnimatePresence>
 
         {/* Turn Indicator */}
-        {!showStartScreen && !isGameStartScreen && !isGameEnd && (
-          <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait">
+          {turnNoticeVisible && turnNoticePayload && (
             <motion.div
-              key={gameState.turnCount}
+              key={`${turnNoticePayload.turnCount}-${turnNoticePayload.isPlayerTurn ? "player" : "enemy"}`}
               initial={{ scale: 0, rotate: -180, opacity: 0 }}
               animate={{ scale: 1, rotate: 0, opacity: 1 }}
               exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: "spring", duration: 0.6 }}
+              transition={{ type: "spring", duration: 0.45 }}
               className="absolute z-40 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
             >
               <div className="bg-gradient-to-br from-yellow-500 to-orange-600 px-8 py-4 rounded-2xl border-4 border-yellow-400 shadow-2xl shadow-yellow-500/50">
                 <div className="text-white text-center">
                   <div className="text-sm font-semibold opacity-80">
-                    {gameState.isPlayerTurn ? "你的回合" : "敌方回合"}
+                    {turnNoticePayload.isPlayerTurn ? "你的回合" : "敌方回合"}
                   </div>
-                  <div className="text-4xl font-bold">{gameState.turnCount}</div>
+                  <div className="text-4xl font-bold">{turnNoticePayload.turnCount}</div>
                 </div>
               </div>
             </motion.div>
-          </AnimatePresence>
-        )}
+          )}
+        </AnimatePresence>
 
         {/* Attacking Indicator */}
         {attackingCardId && (
@@ -565,36 +602,38 @@ export default function App() {
           </motion.button>
         </div>
 
-        {/* Left Side Quick Access (Adjusted left-56 to clear sidebar in desktop) */}
-        <div className={`absolute z-30 top-1/2 -translate-y-1/2 flex flex-col gap-2 ${isDesktop ? 'left-60' : 'left-4'}`}>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={openRanking}
-            className="bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-gray-500/30 hover:bg-yellow-600/20 transition-colors group"
-            title="排行榜"
-          >
-            <Trophy className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={openAchievements}
-            className="bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-gray-500/30 hover:bg-yellow-600/20 transition-colors group"
-            title="成就"
-          >
-            <Award className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={openCollection}
-            className="bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-gray-500/30 hover:bg-purple-600/20 transition-colors group"
-            title="收藏"
-          >
-            <Package className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
-          </motion.button>
-        </div>
+        {/* Left Side Quick Access (Desktop only, mobile uses menu entries) */}
+        {isDesktop && (
+          <div className="absolute z-30 top-1/2 -translate-y-1/2 flex flex-col gap-2 left-60">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={openRanking}
+              className="bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-gray-500/30 hover:bg-yellow-600/20 transition-colors group"
+              title="排行榜"
+            >
+              <Trophy className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={openAchievements}
+              className="bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-gray-500/30 hover:bg-yellow-600/20 transition-colors group"
+              title="成就"
+            >
+              <Award className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={openCollection}
+              className="bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-gray-500/30 hover:bg-purple-600/20 transition-colors group"
+              title="收藏"
+            >
+              <Package className="w-5 h-5 text-purple-400 group-hover:scale-110 transition-transform" />
+            </motion.button>
+          </div>
+        )}
 
         {/* Menu Overlay */}
         <AnimatePresence>

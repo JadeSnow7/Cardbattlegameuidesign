@@ -93,6 +93,7 @@ export function GameLayoutMobile({
                     heroSkillCost={heroSkillCost}
                     currentMana={gameState.player.mana}
                     onHeroSkill={handlers.onHeroSkill}
+                    layout="mobile"
                 />
             </div>
         </div>

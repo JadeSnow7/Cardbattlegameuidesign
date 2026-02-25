@@ -105,6 +105,7 @@ export function GameLayoutDesktop({
                         heroSkillCost={heroSkillCost}
                         currentMana={gameState.player.mana}
                         onHeroSkill={handlers.onHeroSkill}
+                        layout="desktop"
                     />
                 </div>
             </div>
