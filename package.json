@@ -1,5 +1,5 @@
 {
-  "name": "@figma/my-make-file",
+  "name": "card-duel",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -107,6 +107,13 @@
     }
   },
   "main": "electron/main.cjs",
+  "publish": [
+    {
+      "provider": "github",
+      "releaseType": "release",
+      "overwrite": true
+    }
+  ],
   "build": {
     "appId": "com.cardduel.desktop",
     "productName": "Card Duel",
