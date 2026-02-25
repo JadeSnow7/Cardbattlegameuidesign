@@ -36,11 +36,30 @@ jobs:
       - name: Build Web App
         run: npm run build
 
-      - name: Build and Publish Electron App
+      # electron-builder only builds; upload is handled separately below
+      # to avoid the known concurrent-blockmap-upload bug with --publish always
+      - name: Build Electron App (no publish)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_IDENTITY_AUTO_DISCOVERY: false
-        run: npx electron-builder --publish always
+        run: npx electron-builder --publish never
+
+      - name: Collect release artifacts
+        shell: bash
+        run: |
+          mkdir -p dist-artifacts
+          find release -maxdepth 2 \( \
+            -name "*.dmg" -o -name "*.zip" -o -name "*.exe" \
+            -o -name "*.msi" -o -name "*.AppImage" \
+            -o -name "*.deb" -o -name "*.rpm" \
+          \) -exec cp {} dist-artifacts/ \; || true
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist-artifacts/*
+          overwrite: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   android_release:
     needs: release
@@ -91,6 +110,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           files: artifacts/android/*.apk
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -153,5 +173,6 @@ jobs:
           files: |
             artifacts/ios/*.zip
             artifacts/ios/*.log
+          overwrite: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
