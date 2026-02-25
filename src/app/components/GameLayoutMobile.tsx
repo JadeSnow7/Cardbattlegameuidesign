@@ -2,7 +2,6 @@ import { PlayerInfo } from "./PlayerInfo";
 import { BattleBoard } from "./BattleBoard";
 import { HandCards } from "./HandCards";
 import { ActionBar } from "./ActionBar";
-import { GamePhase } from "../types/game";
 import { useGameState } from "../hooks/useGameState";
 
 type GameState = ReturnType<typeof useGameState>["gameState"];
@@ -23,12 +22,10 @@ export function GameLayoutMobile({
     attackingCardId,
     heroSkillCost,
 }: GameLayoutMobileProps) {
-    // Mobile placeholder: Currently falls back to the old vertical layout.
-    // Will be specifically redesigned for touch in a future update.
     return (
-        <div className="relative z-10 flex flex-col h-screen overflow-hidden">
+        <div className="relative z-10 flex flex-col h-[100dvh] overflow-hidden">
             {/* Top Section - Enemy Info */}
-            <div className="p-4 shrink-0">
+            <div className="px-3 pb-2 pt-[calc(env(safe-area-inset-top,0px)+3.5rem)] shrink-0">
                 <div onClick={handlers.onEnemyHeroClick} className={attackingCardId ? "cursor-crosshair" : ""}>
                     <PlayerInfo
                         name={gameState.enemy.name}
@@ -41,7 +38,7 @@ export function GameLayoutMobile({
                         handCount={gameState.enemy.handCount}
                         deckCount={gameState.enemy.deck.length}
                         isEnemy={true}
-                        variant="bar"
+                        variant="mobile"
                     />
                 </div>
             </div>
@@ -55,33 +52,35 @@ export function GameLayoutMobile({
                     onCardSelect={handlers.onBoardCardClick}
                     onCardDrop={handlers.onCardDrop}
                     attackingCardId={attackingCardId}
+                    phaseLabel={gameState.phase}
                 />
             </div>
 
-            {/* Bottom Section - Player Info */}
-            <div className="p-4 pt-0 shrink-0">
-                <PlayerInfo
-                    name={gameState.player.name}
-                    avatar={gameState.player.avatar}
-                    health={gameState.player.health}
-                    maxHealth={gameState.player.maxHealth}
-                    armor={gameState.player.armor}
-                    mana={gameState.player.mana}
-                    maxMana={gameState.player.maxMana}
-                    handCount={gameState.player.hand.length}
-                    deckCount={gameState.player.deck.length}
-                    variant="bar"
-                />
-            </div>
+            {/* Bottom Section */}
+            <div className="shrink-0 flex flex-col relative z-20 bg-gradient-to-t from-black/65 via-black/45 to-transparent border-t border-white/5">
+                <div className="px-3 pt-2 pb-1">
+                    <PlayerInfo
+                        name={gameState.player.name}
+                        avatar={gameState.player.avatar}
+                        health={gameState.player.health}
+                        maxHealth={gameState.player.maxHealth}
+                        armor={gameState.player.armor}
+                        mana={gameState.player.mana}
+                        maxMana={gameState.player.maxMana}
+                        handCount={gameState.player.hand.length}
+                        deckCount={gameState.player.deck.length}
+                        variant="mobile"
+                    />
+                </div>
 
-            {/* Action Bar and Hand Cards container */}
-            <div className="shrink-0 flex flex-col relative z-20">
-                <div className="absolute bottom-full left-0 right-0">
+                <div className="h-[clamp(148px,24vh,220px)]">
                     <HandCards
                         cards={gameState.player.hand}
                         currentMana={gameState.player.mana}
                         selectedCard={selectedCard}
                         onCardSelect={handlers.onCardSelect}
+                        onUnplayableAttempt={handlers.onUnplayableCardAttempt}
+                        layout="docked"
                     />
                 </div>
 

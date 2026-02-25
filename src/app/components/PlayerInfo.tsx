@@ -13,7 +13,7 @@ interface PlayerInfoProps {
   deckCount?: number;
   isEnemy?: boolean;
   status?: Array<{ type: string; icon: string }>;
-  variant?: "sidebar" | "bar";
+  variant?: "sidebar" | "bar" | "mobile";
   onAvatarClick?: () => void;
 }
 
@@ -127,6 +127,89 @@ export function PlayerInfo({
               <span>{deckCount}</span>
             </div>
           )}
+        </div>
+      </motion.div>
+    );
+  }
+
+  if (variant === "mobile") {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: isEnemy ? -12 : 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`flex items-center gap-3 p-3 rounded-xl bg-gradient-to-r ${
+          isEnemy ? "from-red-900/50 to-red-800/35 border-red-500/35" : "from-blue-900/50 to-blue-800/35 border-blue-500/35"
+        } border backdrop-blur-sm`}
+      >
+        <motion.div
+          whileHover={{ scale: 1.04 }}
+          onClick={onAvatarClick}
+          className={`w-12 h-12 rounded-full border-2 ${isEnemy ? "border-red-400" : "border-blue-400"} overflow-hidden ${
+            onAvatarClick ? "cursor-pointer" : ""
+          }`}
+        >
+          <img src={avatar} alt={name} className="w-full h-full object-cover" />
+        </motion.div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-white text-sm font-semibold truncate">{name}</span>
+            <div className="flex items-center gap-2 text-xs text-gray-300 shrink-0">
+              <div className="flex items-center gap-1" title="手牌数">
+                <Droplet className="w-3 h-3" />
+                <span>{handCount}</span>
+              </div>
+              {deckCount !== undefined && (
+                <div className="flex items-center gap-1" title="牌库数">
+                  <Layers className="w-3 h-3" />
+                  <span>{deckCount}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-2 flex items-center gap-2">
+            <Heart className="w-3.5 h-3.5 text-red-400 shrink-0" />
+            <div className="h-4 flex-1 rounded-full overflow-hidden bg-black/45 border border-red-900/50">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${healthPercent}%` }}
+                transition={{ duration: 0.45 }}
+                className="h-full bg-gradient-to-r from-red-600 to-red-500 flex items-center justify-center"
+              >
+                <span className="text-[10px] font-bold text-white leading-none">
+                  {health}/{maxHealth}
+                </span>
+              </motion.div>
+            </div>
+            {armor > 0 && (
+              <div className="px-1.5 py-0.5 rounded-full bg-blue-600/80 text-[10px] text-white font-bold shrink-0">
+                <div className="flex items-center gap-0.5">
+                  <Shield className="w-3 h-3 text-blue-200" />
+                  <span>{armor}</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-2 flex items-center gap-2">
+            <Flame className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <div className="flex gap-1 flex-wrap">
+              {Array.from({ length: maxMana }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`w-2.5 h-2.5 rounded-full border ${
+                    i < mana
+                      ? "bg-gradient-to-br from-cyan-400 to-blue-500 border-cyan-300"
+                      : "bg-gray-700/50 border-gray-600"
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-[11px] text-cyan-300 font-bold shrink-0">
+              {mana}/{maxMana}
+            </span>
+          </div>
         </div>
       </motion.div>
     );

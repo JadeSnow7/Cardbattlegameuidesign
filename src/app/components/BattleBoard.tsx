@@ -10,6 +10,7 @@ interface BattleBoardProps {
   selectedCard?: string | null;
   onCardDrop?: (cardId: string, slotIndex: number) => void;
   attackingCardId?: string | null;
+  phaseLabel?: string;
 }
 
 export function BattleBoard({
@@ -19,6 +20,7 @@ export function BattleBoard({
   selectedCard,
   onCardDrop,
   attackingCardId,
+  phaseLabel,
 }: BattleBoardProps) {
   return (
     <div className="flex flex-col h-full py-4 px-4 overflow-hidden">
@@ -93,6 +95,13 @@ export function BattleBoard({
             <span className="text-white font-bold text-sm">VS</span>
           </div>
         </div>
+        {phaseLabel && (
+          <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2">
+            <div className="px-2.5 py-0.5 rounded-full bg-black/55 border border-yellow-500/40 backdrop-blur-sm">
+              <span className="text-[11px] text-yellow-200 font-semibold">{phaseLabel}</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Player Board */}

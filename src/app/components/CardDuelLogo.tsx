@@ -198,7 +198,7 @@ export function CardDuelLogo({ size = 120, showText = true, animate = true }: Lo
 }
 
 // Compact version for header/nav
-export function CardDuelLogoCompact({ size = 40 }: { size?: number }) {
+export function CardDuelLogoCompact({ size = 40, showText = true }: { size?: number; showText?: boolean }) {
   return (
     <div className="flex items-center gap-2">
       <svg
@@ -235,11 +235,13 @@ export function CardDuelLogoCompact({ size = 40 }: { size?: number }) {
         </defs>
       </svg>
       
-      <div className="flex flex-col">
-        <span className="text-lg font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
-          CARD DUEL
-        </span>
-      </div>
+      {showText && (
+        <div className="flex flex-col">
+          <span className="text-lg font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
+            CARD DUEL
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -70,7 +70,9 @@ export default function App() {
   const [gameEndHandled, setGameEndHandled] = useState(false);
   const [turnNoticeVisible, setTurnNoticeVisible] = useState(false);
   const [turnNoticePayload, setTurnNoticePayload] = useState<TurnNoticePayload | null>(null);
+  const [manaToastVisible, setManaToastVisible] = useState(false);
   const lastTurnNoticeKeyRef = useRef("");
+  const manaToastTimerRef = useRef<number | null>(null);
   const playerId = "player1";
 
   const { isDesktop } = usePlatform();
@@ -301,6 +303,17 @@ export default function App() {
     setShowDeckBuilder(false);
   };
 
+  const handleUnplayableCardAttempt = useCallback(() => {
+    setManaToastVisible(true);
+    if (manaToastTimerRef.current !== null) {
+      window.clearTimeout(manaToastTimerRef.current);
+    }
+    manaToastTimerRef.current = window.setTimeout(() => {
+      setManaToastVisible(false);
+      manaToastTimerRef.current = null;
+    }, 1100);
+  }, []);
+
   const handleNewGame = () => {
     restartGame();
     setShowStartScreen(true);
@@ -339,6 +352,14 @@ export default function App() {
     return () => window.clearTimeout(timer);
   }, [gameState.turnCount, gameState.isPlayerTurn, hasBlockingOverlay]);
 
+  useEffect(() => {
+    return () => {
+      if (manaToastTimerRef.current !== null) {
+        window.clearTimeout(manaToastTimerRef.current);
+      }
+    };
+  }, []);
+
   const layoutHandlers: GameLayoutHandlers = {
     onCardDrop: handleCardDrop,
     onBoardCardClick: handleBoardCardClick,
@@ -348,6 +369,7 @@ export default function App() {
     onSettings: handleSettings,
     onHeroSkill: handleHeroSkill,
     onCardSelect: handleCardSelect,
+    onUnplayableCardAttempt: handleUnplayableCardAttempt,
   };
 
   return (
@@ -556,30 +578,46 @@ export default function App() {
           </motion.div>
         )}
 
-        {/* Top Right Controls */}
-        <div className="absolute z-30 top-4 right-4 flex gap-2">
-          {/* AI Difficulty Indicator */}
-          <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-500/30">
-            <div className="text-white text-sm">
-              <div className="opacity-60">AI难度</div>
-              <div className="font-bold">{gameState.aiDifficulty}</div>
-            </div>
-          </div>
+        {/* Insufficient Mana Toast */}
+        <AnimatePresence>
+          {manaToastVisible && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.96 }}
+              className="absolute z-50 left-1/2 -translate-x-1/2 bottom-[calc(env(safe-area-inset-bottom,0px)+7.5rem)] bg-red-900/85 border border-red-400/70 rounded-xl px-4 py-2 backdrop-blur-sm"
+            >
+              <span className="text-sm font-semibold text-red-100 whitespace-nowrap">法力值不足</span>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          {/* Phase Indicator */}
-          <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-500/30">
-            <div className="text-white text-sm">
-              <div className="opacity-60">阶段</div>
-              <div className="font-bold">{gameState.phase}</div>
+        {/* Top Right Controls */}
+        <div className={`absolute z-30 flex gap-2 ${isDesktop ? "top-4 right-4" : "top-[calc(env(safe-area-inset-top,0px)+0.5rem)] right-3"}`}>
+          {isDesktop && (
+            <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-500/30">
+              <div className="text-white text-sm">
+                <div className="opacity-60">AI难度</div>
+                <div className="font-bold">{gameState.aiDifficulty}</div>
+              </div>
             </div>
-          </div>
+          )}
+
+          {isDesktop && (
+            <div className="bg-black/60 backdrop-blur-sm px-4 py-2 rounded-xl border border-gray-500/30">
+              <div className="text-white text-sm">
+                <div className="opacity-60">阶段</div>
+                <div className="font-bold">{gameState.phase}</div>
+              </div>
+            </div>
+          )}
 
           {/* Mute Button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggleMute}
-            className="bg-black/60 backdrop-blur-sm p-3 rounded-xl border border-gray-500/30 hover:bg-black/80 transition-colors"
+            className={`bg-black/60 backdrop-blur-sm rounded-xl border border-gray-500/30 hover:bg-black/80 transition-colors ${isDesktop ? "p-3" : "p-2.5"}`}
           >
             {isMuted ? (
               <VolumeX className="w-5 h-5 text-white" />
@@ -590,15 +628,15 @@ export default function App() {
         </div>
 
         {/* Top Left Brand (Adjusted left-56 to clear sidebar in desktop) */}
-        <div className={`absolute z-30 top-4 ${isDesktop ? 'left-60' : 'left-4'}`}>
+        <div className={`absolute z-30 ${isDesktop ? "top-4 left-60" : "top-[calc(env(safe-area-inset-top,0px)+0.5rem)] left-3"}`}>
           <motion.button
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleSettings}
-            className="bg-black/45 backdrop-blur-sm px-3 py-2 rounded-xl border border-yellow-500/30 hover:border-yellow-400/60 transition-colors"
+            className={`bg-black/45 backdrop-blur-sm rounded-xl border border-yellow-500/30 hover:border-yellow-400/60 transition-colors ${isDesktop ? "px-3 py-2" : "px-2.5 py-2"}`}
             title="打开菜单"
           >
-            <CardDuelLogoCompact size={36} />
+            <CardDuelLogoCompact size={isDesktop ? 36 : 30} showText={isDesktop} />
           </motion.button>
         </div>
 
@@ -650,7 +688,7 @@ export default function App() {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-gradient-to-br from-gray-900 to-gray-800 p-8 rounded-2xl border-2 border-yellow-600/50 shadow-2xl min-w-[400px]"
+                className="bg-gradient-to-br from-gray-900 to-gray-800 p-6 sm:p-8 rounded-2xl border-2 border-yellow-600/50 shadow-2xl w-[min(92vw,420px)]"
               >
                 <h2 className="text-2xl font-bold text-white mb-6">游戏菜单</h2>
                 <div className="space-y-3">

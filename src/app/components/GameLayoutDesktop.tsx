@@ -2,8 +2,6 @@ import { PlayerInfo } from "./PlayerInfo";
 import { BattleBoard } from "./BattleBoard";
 import { HandCards } from "./HandCards";
 import { ActionBar } from "./ActionBar";
-import { motion } from "motion/react";
-import { GamePhase } from "../types/game";
 import { useGameState } from "../hooks/useGameState";
 
 type GameState = ReturnType<typeof useGameState>["gameState"];
@@ -17,6 +15,7 @@ export interface GameLayoutHandlers {
     onSettings: () => void;
     onHeroSkill: () => void;
     onCardSelect: (id: string) => void;
+    onUnplayableCardAttempt?: (payload: { cardName: string; cost: number; currentMana: number }) => void;
 }
 
 interface GameLayoutDesktopProps {
@@ -83,6 +82,7 @@ export function GameLayoutDesktop({
                         onCardSelect={handlers.onBoardCardClick}
                         onCardDrop={handlers.onCardDrop}
                         attackingCardId={attackingCardId}
+                        phaseLabel={gameState.phase}
                     />
                 </div>
 
@@ -94,6 +94,7 @@ export function GameLayoutDesktop({
                             currentMana={gameState.player.mana}
                             selectedCard={selectedCard}
                             onCardSelect={handlers.onCardSelect}
+                            onUnplayableAttempt={handlers.onUnplayableCardAttempt}
                         />
                     </div>
 

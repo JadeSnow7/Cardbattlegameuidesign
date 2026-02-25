@@ -7,6 +7,7 @@ interface DraggableCardProps extends CardData {
   onCardPlay?: (id: string, slotIndex?: number) => void;
   selectedCard?: string | null;
   onCardSelect?: (id: string) => void;
+  onUnplayableAttempt?: (payload: { cardName: string; cost: number; currentMana: number }) => void;
 }
 
 export const ItemTypes = {
@@ -18,6 +19,7 @@ export function DraggableCard({
   onCardPlay,
   selectedCard,
   onCardSelect,
+  onUnplayableAttempt,
   ...card
 }: DraggableCardProps) {
   const isPlayable = card.cost <= currentMana;
@@ -48,9 +50,15 @@ export function DraggableCard({
         isPlayable={isPlayable}
         isSelected={selectedCard === card.id}
         onClick={() => {
-          if (isPlayable && onCardSelect) {
-            onCardSelect(card.id);
+          if (isPlayable) {
+            onCardSelect?.(card.id);
+            return;
           }
+          onUnplayableAttempt?.({
+            cardName: card.name,
+            cost: card.cost,
+            currentMana,
+          });
         }}
       />
     </div>

@@ -8,6 +8,8 @@ interface HandCardsProps {
   onCardPlay?: (id: string) => void;
   selectedCard?: string | null;
   onCardSelect?: (id: string) => void;
+  onUnplayableAttempt?: (payload: { cardName: string; cost: number; currentMana: number }) => void;
+  layout?: "overlay" | "docked";
 }
 
 export function HandCards({
@@ -16,36 +18,57 @@ export function HandCards({
   onCardPlay,
   selectedCard,
   onCardSelect,
+  onUnplayableAttempt,
+  layout = "overlay",
 }: HandCardsProps) {
+  const isDocked = layout === "docked";
+  const totalCards = cards.length;
+
+  const cardWidth = isDocked ? (totalCards >= 7 ? 90 : totalCards >= 5 ? 96 : 106) : 128;
+  const overlap = isDocked ? Math.min(38, Math.max(14, (totalCards - 3) * 6)) : 0;
+  const maxRotation = isDocked ? 12 : 8;
+
   return (
-    <div className="relative">
+    <div className={`relative ${isDocked ? "h-full" : ""}`}>
       {/* Hand Container with Fan Effect */}
-      <div className="flex justify-center items-end gap-2 px-4 py-3 bg-gradient-to-t from-black/60 to-transparent">
+      <div
+        className={`flex justify-center items-end px-4 ${
+          isDocked
+            ? "h-full gap-0 py-2 bg-gradient-to-t from-black/55 via-black/35 to-transparent"
+            : "gap-2 py-3 bg-gradient-to-t from-black/60 to-transparent"
+        }`}
+      >
         {cards.map((card, idx) => {
-          const totalCards = cards.length;
           const middleIndex = (totalCards - 1) / 2;
           const offsetFromCenter = idx - middleIndex;
-          const rotation = offsetFromCenter * 3; // degrees
-          const yOffset = Math.abs(offsetFromCenter) * 4;
+          const rotation = totalCards > 1 ? (offsetFromCenter / middleIndex) * maxRotation : 0;
+          const yOffset = isDocked ? Math.abs(offsetFromCenter) * 1.6 : Math.abs(offsetFromCenter) * 4;
+          const isSelected = selectedCard === card.id;
 
           return (
             <motion.div
               key={card.id}
               initial={{ y: 100, opacity: 0 }}
               animate={{
-                y: 0,
+                y: isSelected && isDocked ? -20 : 0,
                 opacity: 1,
                 rotate: rotation,
+                scale: isSelected && isDocked ? 1.06 : 1,
               }}
               transition={{
                 type: "spring",
                 delay: idx * 0.05,
+                stiffness: 300,
+                damping: 26,
               }}
               style={{
                 transformOrigin: "bottom center",
                 marginBottom: `${yOffset}px`,
+                marginLeft: idx === 0 ? 0 : `${-overlap}px`,
+                width: `${cardWidth}px`,
+                zIndex: isSelected ? 50 : 10 + idx,
               }}
-              className="w-32"
+              className="shrink-0"
             >
               <DraggableCard
                 {...card}
@@ -53,6 +76,7 @@ export function HandCards({
                 onCardPlay={onCardPlay}
                 selectedCard={selectedCard}
                 onCardSelect={onCardSelect}
+                onUnplayableAttempt={onUnplayableAttempt}
               />
             </motion.div>
           );
@@ -65,7 +89,7 @@ export function HandCards({
       </div>
 
       {/* Card Count Indicator */}
-      <div className="absolute top-2 left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-500/30">
+      <div className={`absolute left-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full border border-gray-500/30 ${isDocked ? "top-1" : "top-2"}`}>
         <span className="text-white text-sm font-semibold">
           手牌: {cards.length}
         </span>

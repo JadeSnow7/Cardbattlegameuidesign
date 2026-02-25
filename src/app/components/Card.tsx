@@ -59,9 +59,7 @@ export function Card({
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={handleClick}
-      className={`relative w-full cursor-pointer select-none ${
-        !isPlayable ? "opacity-50" : ""
-      }`}
+      className="relative w-full cursor-pointer select-none"
       style={{ transformStyle: "preserve-3d" }}
     >
       {/* Card Container */}
@@ -87,7 +85,13 @@ export function Card({
         </div>
 
         {/* Cost Badge */}
-        <div className="absolute top-2 left-2 w-10 h-10 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 border-3 border-white flex items-center justify-center shadow-lg z-10">
+        <div
+          className={`absolute top-2 left-2 w-10 h-10 rounded-full border-3 flex items-center justify-center shadow-lg z-10 ${
+            isPlayable
+              ? "bg-gradient-to-br from-cyan-400 to-blue-600 border-white"
+              : "bg-gradient-to-br from-red-500 to-rose-700 border-red-200"
+          }`}
+        >
           <span className="text-xl font-bold text-white drop-shadow-lg">
             {cost}
           </span>
@@ -156,11 +160,7 @@ export function Card({
       </div>
 
       {/* Not Playable Overlay */}
-      {!isPlayable && (
-        <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
-          <span className="text-white font-bold text-sm">费用不足</span>
-        </div>
-      )}
+      {!isPlayable && <div className="absolute inset-0 rounded-xl bg-black/52 pointer-events-none" />}
     </motion.div>
   );
 }
