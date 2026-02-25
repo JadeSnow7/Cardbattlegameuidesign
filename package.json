@@ -79,14 +79,15 @@
     "@capacitor/cli": "7.0.0",
     "@tailwindcss/vite": "4.1.12",
     "@vitejs/plugin-react": "4.7.0",
-    "tailwindcss": "4.1.12",
-    "vite": "6.3.5",
-    "vitest": "^4.0.18",
     "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
     "electron": "^33.2.1",
     "electron-builder": "^26.0.12",
-    "wait-on": "^8.0.1",
-    "cross-env": "^7.0.3"
+    "tailwindcss": "4.1.12",
+    "typescript": "^5.9.3",
+    "vite": "6.3.5",
+    "vitest": "^4.0.18",
+    "wait-on": "^8.0.1"
   },
   "peerDependencies": {
     "react": "18.3.1",
